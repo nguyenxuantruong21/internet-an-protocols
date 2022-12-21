@@ -1,0 +1,310 @@
+DẠNG BÀI 1: WEB CACHE
+kích thước đối tượng: 1Mb
+tốc độ yêu cầu trung bình: 15 yc/s
+trễ từ router->server: 2s
+tốc độ liên kết truy nhập: 15Mbps
+tốc độ LAN: 100Mbps
+------------------------------
+1. tải trọng lưu lượng trên LAN là:
+	15 x 1 : 100 = 0.15 (15%)
+=> trễ nhỏ cỡ ms
+2. tải trọng lưu lượng liên kết truy nhập
+	15 x 1 : 15 = 1 (100%)
+=> trễ liên kiết lớn có thể rất lớn lên đến hàng phút
+3. tổng thời gian trễ
+	2s + minutes + miliseconds => cỡ phút
+Giải pháp 1: tăng băng thông truy nhập => chi phí đắt vcl
+Giải pháp 2: lắp đặt cache
+Giả sử tỷ lệ truy vấn vào cache là 0,4 
+(40% yêu cầu được thực hiện tại cache,
+ 60% yêu cầu do server gốc đáp ứng)
++ tải trọng LAN = 40% x 15% = 6%
+=> trễ cỡ 10ms
++ trễ liên kết truy nhập: 60% x 100% = 60%
+=> trễ cỡ 10ms
+dẫn đến trễ giảm xuống rất nhỏ 10 miliseconds
+=> tổng trễ : 0.4 x 0.01 + 0.6 x (2 + 0.01) 
+		= 1.21 seconds
+
+BÀI 2:
+tỉ lệ truy vấn là: 62%
+kích thước đối tượng: 0.12MB = 0.96Mb
+tốc độ yêu cầu trung bình: 12 yc/s
+trễ từ router->server: 1.2s
+tốc độ liên kết truy nhập: 12Mbps
+tốc độ LAN: 100Mbps
+1. khi chưa có cache
++ tải trọng lưu lượng trong LAN 
+	t1 = 12x0.96:100 = 0,1152 (11,52%)
+=> thời gian truy nhập LAN cỡ ms
++ tải trọng lưu lượng liên kết
+	t2 = 12x0.96:12 = 0.96 (96%)
+=>thời gian truy nhập cỡ phút
+=> T=t1+t2+t = s + ms + phút = phút
+2. có cache
+tỉ lệ truy cập cache 62% 
++ tải trọng trong mạng LAN là: 62%x11,52% = 7.1424%
+=> thời gian đáp ứng khá nhanh cỡ ms khoảng 10ms
++ tải trọng truy cập đáp ứng liên kết 38%x96% = 36,38%
+thời gian truy nhập khoảng 20ms
+=> T= 62%x0,01s + 38%x(1,2+0,02) = 0,4698 (s)
+
+
+DẠNG BÀI 2: P2P
+F: là kích thước gói tin gửi đi
+Us: băng thông máy chủ
+Ui: băng thông thiết bị i tải lên
+di: băng thông thiết bị i tải xuống 
+thời gian máy chủ gửi n bản tin -> n khách: N.F/Us
+thời gian máy khách tải xuống 1 file: F/di
+thời gian F đến N khách kiến trúc C-S
+	dcs = max(NF/Us,F/min(di))
+thời gian F đến N khách kiến trúc P2P
+	dp2p = max(F/Us,F/(min(di)i), N.F/(Us + {ui}))
+BÀI 1:
+F = 15 Gb = 15 * 1024 Mb
+Us = 30 Mbps
+di = 2 Mbps = dmin = 2Mbps
+N = 10,100,1000
+u = 300 Kbps, 700Kbps, 2Mbps
+
+C-C
+dcs = max(N.F/Us,F/min(di))
+		N
+		10	100	1000
+300 Kbps	7068	51200	512000
+700 Kbps	7680	51200	512000
+2 Mbps		7680	51200	512000
+
+P-P
+dp2p = max(F/Us,F/(min(di)),N.F/(Us + {Ui}))
+		N
+		10	100	1000
+300 Kbps	7680	25904	47559		
+700 Kbps	7680	15616	21525	
+2 Mbps		7680	7680	7680
+
+BÀI 3: 
+N = 20
+F = 350 MB
+Us = 100 Mb/s
+dmin = 100 Mb/s
+u=2
+
+F = 350 x 8 = 2800 Mb
+C-S:
+N.F/Us = 560s
+F/min(di) = 28s
+dcs = max(N.F/Us, F/min(di)) = 560s
+
+P2P
+F/Us = 28s
+F/min(di) = 28s
+N.F/Us+{ui} = 400s
+dp2p = max(F/Us, F/min(di), N.F/Us+{ui}) = 400s
+
+BÀI 2:
+a)
+sơ đồ phân phối máy chủ gửi tệp đến khách song song, với tốc độ Us/N
+tốc độ này phải nhỏ hơn tốc độ tải xuống khách hàng Us/N < dmin theo giả định
+=> mỗi khách hàng sẽ nhận tỉ lệ Us/N
+=> thời gian mỗi khách hàng nhận được toàn bộ tệp là F/(Us/N) = NF/Us
+vì tất cả các máy khách đều nhận được toàn bộ tệp trong là NF/Us
+=> thời gian phân phối tổng thể là: NF/Us
+
+b)
+sơ đồ phân phối máy chủ gửi tệp đến máy khách song song, tốc độ là dmin
+tốc độ tổng hợp là N.dmin < tốc độ liên kết máy chủ Us 
+vì theo giả định Us/N >= dmin
+vì máy khách nhận tốc độ dmin => thời gian máy khách nhận được toàn bộ
+tệp là F/dmin
+vì tất cả máy khách đều nhận tệp trong thời gian này nên phân phối tổng 
+thể là F/dmin
+
+c)
+Dcs >=  max (NF/Us, F/dmin) (1)
+giả sử Us/N <= dmin sau đó từ pt1 ta có Dcs ≥ NF/Us
+nhưng từ a ta có Dcs <= NF/Us	
+kết hợp 2 điều trên ta có
+Dsc = NF/Us khi Us/N <= dmin (2)
+tương tự có
+Dcs = F/dmin when us/N >= dmin (3)
+kết hợp 2 và 3 => 1
+
+
+=======================lý thuyết=================================
+1.Mô hình chồng giao thức TCP/IP:
+-Chức năng tương ứng của từng lớp
+	+ tầng ứng dụng: đảm nhận vai trò giao tiếp dữ liệu giữa 2 máy khác nhau
+	thông qua các dịch vụ mạng khác nhau (duyệt web, chat, gửi email,
+	một số giao thức trao đổi dữ liệu: SMTP, SSH, FTP,...).
+	+ tầng vận chuyển: xử lý vấn đề giao tiếp giữa các máy chủ trong cùng một mạng 
+	hoặc khác mạng được kết nối với nhau thông qua bộ định tuyến.
+	+ tầng liên mạng: chịu trách nhiệm truyền tải dữ liệu một cách logic trong mạng. 
+	+ tầng giao diện mạng: Chịu trách nhiệm truyền dữ liệu giữa hai thiết bị trong cùng một mạng. 
+-So sánh với mô hình OSI
+Mô hình OSI
+	Lớp ứng dụng
+	Lớp trình diễn
+	Lớp phiên 
+	Lớp vận chuyển
+	Lớp mạng 
+	Lớp liên kết dữ liệu
+	Lớp vật lý	
+Mô hình TCP/IP
+	Tầng ứng dụng
+	Tầng vận chuyển
+	Tầng liên mạng
+	Tầng giao diện mạng
+2 truyền thông tiến trình
+- Trong ngữ cảnh phiên truyền thông giữa một cặp tiến trình, tiến trình kích hoạt truyền thông 
+(nghĩa là khởi đầu liên hệ với tiến trình khác tại đầu phiên) 
+được gọi là khách. Còn tiến trình chờ được liên lạc để bắt đầu phiên là chủ.
+-Khi các tiến trình chạy trên cùng một hệ thống cuối thì chúng truyền thông với nhau
+ theo kiểu liên tiến trình, sử dụng những quy tắc do HĐH của hệ thống đầu cuối đó điều khiển.
+-Tiến trình truyền thông trên hai/nhiều trạm khác nhau (có thể các trạm chạy các HĐH khác nhau)
+ gửi các bản tin xuyên qua mạng máy tính.
+	+ Tiến trình gửi tạo ra và gửi các bản tin vào mạng.
+	+ Tiến trình nhận sẽ nhận các bản tin này và có thể đáp lại bằng việc gửi bản tin ngược lại. 
+-Chức năng giao diện giữa tiến trình và mạng
+	+ Một tiến trình gửi bản tin vào mạng và nhận bản tin từ mạng qua một giao diện phần mềm
+	 gọi là socket. 
+	+ Một tiến trình có số nhận dạng (identifier) gồm địa chỉ IP và số cổng gắn với tiến trình
+	 trong trạm.Ví dụ gửi bản tin HTTP tới máy của web gaia.cs.umass.edu 
+3 http 
+a.
+-Trong mô hình client-server: client tạo ra các request tới server, server sẽ response mỗi request
+-Chuỗi các request có thể được tạo ra liên tục hoặc định kỳ theo thời gian
+-Do đó, nhà phát triển ứng dụng cần tạo ra các quyết định quan trọng:
+-Kết nối liên tục và kết nối không liên tục
+b.
+-Non-persistent HTTP
+Chỉ một đối tượng được gửi qua một kết nối TCP sử dụng kết nối không liên tục
+-Persistent HTTP
+Nhiều đối tượng có thể được gửi trên một kết nối TCP giữa client và server
+sử dụng kết nối liên tục trong chế độ mặc định
+c.
+-Cookie là 1 file text nhỏ được server tạo ra và gửi tới browser, được lưu trữ trong máy tính
+người dùng một cách tạm thời hoặc cố định, nó cho phép các trang web nhận ra và bám vết người sử dụng. 
+-Cookie có chứa URL của trang web đã đặt cookie, không chứa bất cứ thông tin nào về người dùng hoặc 
+máy của người dùng.
+-Khi người dùng quay lại trang web, trình duyệt sẽ tìm kiếm cookies. 
+Nếu URL của cookies khớp với URL của trang web, trang web sẽ truy xuất thông tin máy chủ bằng 
+cách sử dụng thông tin lấy được từ cookies.
+d.
+HTTP có cơ chế cho phép tra cứu việc đối tượng trong cache đã được cập nhật hay chưa
+Nó sẽ không gửi đối tượng nếu cache đã cập nhật phiên bản mới. 
+cache: chỉ ra ngày của bản sao cached trong yêu cầu HTTP 
+If-modified-since: <date>
+server: phản hồi nhưng không gửi đối tượng nào nếu copy của cache là cập nhật : 
+HTTP/1.0 304 Not Modified
+
+4 FTP
+-Khái niêm: là giao thức truyền tệp (tương tự như HTTP)
+-Cấu trúc: sử dụng 2 TCP song song để truyền tệp
+-hoạt động: theo kiến trúc client-server
++ 1 kết nối điều khiển: được dùng để gửi thông tin điều khiển giữa 2 trạm chủ 
++ 1 kết nối dữ liệu: được dùng để gửi tệp, kết nối dữ liệu là không liên tục 
+
+5. SMTP-email
+-POP3(sử dụng cổng 110)
+	- sử dụng lệnh: đăng nhập đăng xuất, tải thư, xóa thư
+	- có 2 chế độ hoạt động: deletemode, keepmode
+- IMAP
+	- là giao thức thư
+	- giữ toàn bộ thư tại địa chỉ duy nhất trong server
+6.DNS
+-Nhiệm vụ chính của hệ thống tên miền (DNS) là phiên dịch tên trạm chủ sang địa chỉ IP. 
+Là một giao thức lớp ứng dụng cho phép các trạm chủ truy vấn cơ sở dữ liệu phân tán.
+-Một số dịch mà DNS cung cấp:
+	+ Host aliasing
+	+ mail server aliasing
+	+ phân bố tải
+-Bản ghi và bản tin DNS:
+	+ một bản ghi có 4 trường: name, value, type, TTL (thời gian sống của bản ghi nguồn)
+	+ bản ghi DNS:  12byte đầu là phần tiêu đề; phần câu hỏi(question); phần trả lời (answer); 
+	phần thẩm quyền (authority); phần bổ trợ (additional)
+7.P2P
+-Kiến trúc C-S: một máy chủ phân bố tệp cho các thiết bị ngang hàng
+-Kiến trúc P2P: máy chủ chỉ phân bố tệp một lần, các thiết bị ngang hàng có thể chia sẻ tệp cho nhau.
+-BitTorent là giao thức P2P thông dụng để phân bố tệp. tập hợp các thiết bị
+ ngang hàng phân bố tệp được gọi là torrent (dòng chảy)
+-Bảng hàm băm DHT: là một kĩ thuật đánh chỉ số và tìm kiếm thông tin thông dụng.
++ DHT vòng: mỗi thiết bị ngang hàng chỉ duy trì theo dõi thiết bị ngay sau nó
+DHT vòng cung cấp giải pháp rất thông minh nhằm giảm số lượng thông tin che phủ mỗi thiết 
+bị ngang hàng phải quản lý.
+
+9.web
+web1
+	-chủ yếu là văn bản và hĩnh tĩnh chủ yếu để đọc
+web2
+	-Web2 cho người dùng tương tác và cộng tác với nhau thông qua đối thoại 
+	trên phương tiện truyền thông.Facebook, Youtube, Tik Tok
+	-Web2 đã có các tình năng đặc biệt, có thể kể đến như tìm kiếm thông qua từ khóa,
+	liên kết các website với nhau
+web3
+	-có độ bảo mật cao hơn web2
+	-Web3 chú trọng vào việc sử dụng các định dạng dữ liệu và các giao thức chung.
+	-Trong Web3, cơ sở dữ liệu sẽ chạy trên các blockchain, mạng phi tập trung với 
+	nhiều node ngang hàng, qua đó tạo giao thức kinh tế điện tử.
+	-Trên Web3, bên trung gian bị loại bỏ hoàn toàn, dữ liệu không thể bị chỉnh 
+	sửa hay thao túng và đặc biệt, nó sẽ hoạt động không ngừng nghỉ.
+	-Filecoin, Livepeer
+10.IoT
+- khái niệm: IoT ( Internet of Things – IIoT) là tập hợp các cảm biến, công cụ và thiết bị
+	 được kết nối thông qua internet với các ứng dụng công nghiệp
+- đặc điểm:
+Công nghệ này kết nối các thiết bị và kết hợp với các công nghệ khác như điện toán đám mây,
+phân tích dữ liệu, AI để số hóa và cải thiện năng suất của các quy trình công nghiệp, 
+chuyển đổi mô hình kinh doanh,đồng thời giảm thiểu lãng phí trong sản xuất và vận hành.
+- kiến trúc:
+	+ Khung kiến trúc với nhiều yếu tố cấu thành, bao gồm hệ thống nhúng.
+	+ Tham gia giao tiếp vật lý với các thiết bị khác thông qua công cụ kết nối.
+- ứng dụng:
+	- nhà thông minh
+	- thu thập dữ liệu
+	- giám sát tài sản
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
